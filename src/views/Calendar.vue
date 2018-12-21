@@ -7,11 +7,11 @@
 
 <script>
 // @ is an alias to /src
-import calendarComponent from "@/components/Calendar.component.vue";
+import CalendarComponent from "@/components/Calendar.component.vue";
 export default {
   name: "Calendar",
   components: {
-    calendarComponent
+    CalendarComponent
   }
 };
 </script>
