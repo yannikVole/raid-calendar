@@ -1,11 +1,15 @@
 <template>
     <div class="calendar-component">
         <h2>Calendar-Component</h2>
+        <div class="month-selection">
+            <button v-for="(month,index) in months" :key="month.name" @click="onSetActiveMonth($event,index)">{{month.name}}</button>
+        </div>
         <div class="flex-row">
-        <table v-for="n in 12" :key="n">
+            <div v-if="displayAll">
+        <table v-for="(month,monthIndex) in months" :key="month.name">
             <thead>
             <tr>
-                <th colspan="7">{{months[n-1].name}}</th>
+                <th colspan="7">{{month.name}}</th>
             </tr>
             <tr>
                 <th>Sun</th>
@@ -18,7 +22,7 @@
             </tr>
             </thead>
             <tbody>
-            <tr v-for="(week,index) in createCalendar(2018,n-1)" :key="index">
+            <tr v-for="(week,weekIndex) in createCalendar(2018,monthIndex)" :key="weekIndex">
                 <td v-for="(day, dayIndex) in week" :key="dayIndex" @click="createEvent">
                     <ul class="event-anchor">
 
@@ -29,6 +33,35 @@
             </tbody>
         </table>
         </div>
+            <div v-else>
+                <table>
+                    <thead>
+                    <tr>
+                        <th colspan="7">{{activeMonth.name}}</th>
+                    </tr>
+                    <tr>
+                        <th>Sun</th>
+                        <th>Mon</th>
+                        <th>Tue</th>
+                        <th>Wed</th>
+                        <th>Thu</th>
+                        <th>Fri</th>
+                        <th>Sat</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="(week,index) in createCalendar(2018,activeMonth.index)" :key="index">
+                        <td v-for="(day, dayIndex) in week" :key="dayIndex" @click="createEvent">
+                            <ul class="event-anchor">
+
+                            </ul>
+                            <span class="day-number">{{day}}</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -37,6 +70,12 @@ export default {
   name: "CalendarComponent",
   data() {
     return {
+      displayAll: true,
+      activeMonth: {
+        name: null,
+        days: null,
+        index: null
+      },
       months: [
         {
           name: "January",
@@ -131,6 +170,16 @@ export default {
       node.style.backgroundColor = `rgba(${Math.random() *
         255},${Math.random() * 255},${Math.random() * 255})`;
       anchor.append(node);
+    },
+    onSetActiveMonth(e, index) {
+      if (index === this.activeMonth.index) {
+        this.displayAll = !this.displayAll;
+      } else {
+        this.displayAll = false;
+      }
+      this.activeMonth.name = this.months[index].name;
+      this.activeMonth.days = this.months[index].days;
+      this.activeMonth.index = index;
     }
   }
 };
@@ -157,7 +206,7 @@ export default {
       tr {
         td {
           position: relative;
-          width: 100px;
+          width: 150px;
           height: 100px;
           text-align: center;
           padding: 5px;
@@ -169,6 +218,7 @@ export default {
             position: absolute;
             left: 2px;
             top: 2px;
+            pointer-events: none;
           }
           .event-anchor {
             list-style: none;
@@ -187,6 +237,21 @@ export default {
           }
         }
       }
+    }
+  }
+}
+.month-selection {
+  button {
+    background-color: #fff;
+    color: #50c8ff;
+    border: 2px solid #50c8ff;
+    margin: 10px 2.5px 10px;
+    padding: 5px 10px;
+    transition: all 0.3s;
+    border-radius: 3px;
+    &:hover {
+      color: #fff;
+      background-color: #50c8ff;
     }
   }
 }
