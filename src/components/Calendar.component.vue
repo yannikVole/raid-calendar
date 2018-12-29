@@ -2,11 +2,10 @@
     <div class="calendar-component">
         <h2>Calendar-Component</h2>
         <div class="month-selection">
-            <button v-for="(month,index) in months" :key="month.name" @click="onSetActiveMonth($event,index)">{{month.name}}</button>
+            <button v-for="(month) in months" :key="month.name" @click="toggleMonthVisibility($event,month.index)" :class="{monthIsActive:month.visible}">{{month.name}}</button>
         </div>
         <div class="flex-row">
-            <div v-if="displayAll">
-        <table v-for="(month,monthIndex) in months" :key="month.name">
+        <table v-for="(month) in monthsByVisibility" :key="month.name">
             <thead>
             <tr>
                 <th colspan="7">{{month.name}}</th>
@@ -22,45 +21,18 @@
             </tr>
             </thead>
             <tbody>
-            <tr v-for="(week,weekIndex) in createCalendar(2018,monthIndex)" :key="weekIndex">
-                <td v-for="(day, dayIndex) in week" :key="dayIndex" @click="createEvent">
-                    <ul class="event-anchor">
-
+            <tr v-for="(week,weekIndex) in createMonth(2018, month.index)" :key="weekIndex">
+                <td v-for="(day, dayIndex) in week" :key="dayIndex">
+                    <ul class="event-anchor" v-if="month.eventData">
+                        <li v-for="(event,eventIndex) in filterByDay(month.eventData, day)" :key="eventIndex">
+                            {{event.name}}
+                        </li>
                     </ul>
                     <span class="day-number">{{day}}</span>
                 </td>
             </tr>
             </tbody>
         </table>
-        </div>
-            <div v-else>
-                <table>
-                    <thead>
-                    <tr>
-                        <th colspan="7">{{activeMonth.name}}</th>
-                    </tr>
-                    <tr>
-                        <th>Sun</th>
-                        <th>Mon</th>
-                        <th>Tue</th>
-                        <th>Wed</th>
-                        <th>Thu</th>
-                        <th>Fri</th>
-                        <th>Sat</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr v-for="(week,index) in createCalendar(2018,activeMonth.index)" :key="index">
-                        <td v-for="(day, dayIndex) in week" :key="dayIndex" @click="createEvent">
-                            <ul class="event-anchor">
-
-                            </ul>
-                            <span class="day-number">{{day}}</span>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
         </div>
     </div>
 </template>
@@ -76,82 +48,44 @@ export default {
         days: null,
         index: null
       },
-      months: [
-        {
-          name: "January",
-          days: 31
-        },
-        {
-          name: "February",
-          days: 28
-        },
-        {
-          name: "March",
-          days: 31
-        },
-        {
-          name: "April",
-          days: 30
-        },
-        {
-          name: "May",
-          days: 31
-        },
-        {
-          name: "June",
-          days: 30
-        },
-        {
-          name: "July",
-          days: 31
-        },
-        {
-          name: "August",
-          days: 31
-        },
-        {
-          name: "September",
-          days: 30
-        },
-        {
-          name: "October",
-          days: 31
-        },
-        {
-          name: "November",
-          days: 30
-        },
-        {
-          name: "December",
-          days: 31
-        }
-      ]
+      months: [],
+      eventData: null
     };
   },
-  computed: {},
+  computed: {
+    monthsByVisibility() {
+      const result = [];
+      this.months.forEach(month => {
+        if (month.visible) {
+          result.push(month);
+        }
+      });
+      return result;
+    }
+  },
   components: {},
   methods: {
-    createCalendar(year, month) {
+    createMonth(year, month) {
       let day = 1;
       this.months[1].days =
         (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 ? 29 : 28;
       let startDay = new Date(year, month, day).getDay();
       let haveDays = true;
-      let calendar = [];
+      let monthCalendar = [];
       let i, j;
       i = 0;
       while (haveDays) {
-        calendar[i] = [];
+        monthCalendar[i] = [];
         for (j = 0; j < 7; j++) {
           if (i === 0) {
             if (j === startDay) {
-              calendar[i][j] = day++;
+              monthCalendar[i][j] = day++;
               startDay++;
             }
           } else if (day <= this.months[month].days) {
-            calendar[i][j] = day++;
+            monthCalendar[i][j] = day++;
           } else {
-            calendar[i][j] = "";
+            monthCalendar[i][j] = "";
             haveDays = false;
           }
           if (day > this.months[month].days) {
@@ -160,28 +94,28 @@ export default {
         }
         i++;
       }
-      return calendar;
+      return monthCalendar;
     },
-
-    createEvent(e) {
-      let anchor = e.target.querySelector(".event-anchor");
-      let node = document.createElement("li");
-      node.innerHTML = "This is a test event!";
-      node.style.backgroundColor = `rgba(${Math.random() *
-        255},${Math.random() * 255},${Math.random() * 255})`;
-      anchor.append(node);
+    toggleMonthVisibility(e, index) {
+      this.months[index].visible = !this.months[index].visible;
     },
-    onSetActiveMonth(e, index) {
-      if (index === this.activeMonth.index) {
-        this.displayAll = !this.displayAll;
-      } else {
-        this.displayAll = false;
+    filterByDay(eventData, day) {
+      const result = [];
+      if (eventData != undefined) {
+        eventData.forEach(event => {
+          if (event.date.day === day) {
+            result.push(event);
+          }
+        });
       }
-      this.activeMonth.name = this.months[index].name;
-      this.activeMonth.days = this.months[index].days;
-      this.activeMonth.index = index;
+      return result;
     }
-  }
+  },
+  watch: {},
+  beforeMount() {
+    this.months = this.$store.getters.getMonthData;
+  },
+  mounted() {}
 };
 </script>
 <style scoped lang="scss">
@@ -211,7 +145,7 @@ export default {
           text-align: center;
           padding: 5px;
           &:hover {
-            background-color: rgba(202, 51, 47, 0.56);
+            background-color: rgba(110, 202, 106, 0.17);
             cursor: pointer;
           }
           .day-number {
@@ -242,8 +176,8 @@ export default {
 }
 .month-selection {
   button {
-    background-color: #fff;
-    color: #50c8ff;
+    background-color: red;
+    color: #fff;
     border: 2px solid #50c8ff;
     margin: 10px 2.5px 10px;
     padding: 5px 10px;
@@ -252,6 +186,9 @@ export default {
     &:hover {
       color: #fff;
       background-color: #50c8ff;
+    }
+    &.monthIsActive {
+      background-color: green;
     }
   }
 }
