@@ -22,7 +22,7 @@
             </thead>
             <tbody>
             <tr v-for="(week,weekIndex) in createMonth(2018, month.index)" :key="weekIndex">
-                <td v-for="(day, dayIndex) in week" :key="dayIndex">
+                <td v-for="(day, dayIndex) in week" :key="dayIndex" @click="openModal(day,month)">
                     <ul class="event-anchor" v-if="month.eventData">
                         <li v-for="(event,eventIndex) in filterByDay(month.eventData, day)" :key="eventIndex">
                             {{event.name}}
@@ -34,10 +34,12 @@
             </tbody>
         </table>
         </div>
+        <CalendarAddEventModal :selected-date="dateSelected" :display="displayModal" :on-modal-close-handler="onModalClose"> </CalendarAddEventModal>
     </div>
 </template>
 
 <script>
+import CalendarAddEventModal from "@/components/CalendarAddEventModal.component.vue";
 export default {
   name: "CalendarComponent",
   data() {
@@ -49,7 +51,10 @@ export default {
         index: null
       },
       months: [],
-      eventData: null
+      eventData: null,
+      displayModal: false,
+      dateSelected: null,
+      keys: { 37: 1, 38: 1, 39: 1, 40: 1 }
     };
   },
   computed: {
@@ -63,8 +68,45 @@ export default {
       return result;
     }
   },
-  components: {},
+  components: {
+    CalendarAddEventModal
+  },
   methods: {
+    onModalClose() {
+      this.displayModal = false;
+      if (window.removeEventListener)
+        window.removeEventListener(
+          "DOMMouseScroll",
+          this.preventDefault,
+          false
+        );
+      window.onmousewheel = document.onmousewheel = null;
+      window.onwheel = null;
+      window.ontouchmove = null;
+      document.onkeydown = null;
+    },
+    openModal(day, month) {
+      this.displayModal = true;
+      this.dateSelected = { day, month };
+      if (window.addEventListener)
+        // older FF
+        window.addEventListener("DOMMouseScroll", this.preventDefault, false);
+      window.onwheel = this.preventDefault; // modern standard
+      window.onmousewheel = document.onmousewheel = this.preventDefault; // older browsers, IE
+      window.ontouchmove = this.preventDefault; // mobile
+      document.onkeydown = this.preventDefaultForScrollKeys;
+    },
+    preventDefault(e) {
+      e = e || window.event;
+      if (e.preventDefault) e.preventDefault();
+      e.returnValue = false;
+    },
+    preventDefaultForScrollKeys(e) {
+      if (this.keys[e.keyCode]) {
+        this.preventDefault(e);
+        return false;
+      }
+    },
     createMonth(year, month) {
       let day = 1;
       this.months[1].days =
